@@ -1,5 +1,9 @@
 package signalcli
 
+import (
+	"encoding/json"
+)
+
 type Group struct {
 	ID                    string   `json:"id"`
 	Name                  string   `json:"name"`
@@ -60,7 +64,7 @@ type Reaction struct {
 
 type DataMessage struct {
 	Timestamp        int64        `json:"timestamp"`
-	Message          *string      `json:"message,omitempty"`
+	Message          string       `json:"message,omitempty"`
 	ExpiresInSeconds int          `json:"expiresInSeconds"`
 	ViewOnce         bool         `json:"viewOnce"`
 	Sticker          *Sticker     `json:"sticker,omitempty"`
@@ -88,4 +92,35 @@ type Envelope struct {
 type Payload struct {
 	Envelope Envelope `json:"envelope"`
 	Account  string   `json:"account"`
+}
+
+func (p *Payload) IsMessage() bool {
+	return p.Envelope.DataMessage.Message != ""
+}
+
+func (p *Payload) MessageContent() string {
+	return p.Envelope.DataMessage.Message
+}
+
+func (p *Payload) InferRecipient() string {
+	if p.Envelope.DataMessage.GroupInfo.GroupID != "" {
+		return p.Envelope.DataMessage.GroupInfo.GroupID
+	}
+	return p.Envelope.SourceNumber
+}
+
+func (p *Payload) Reply(message string) error {
+	return Send(message, p.InferRecipient())
+}
+
+func (p *Payload) IsMe() bool {
+	return p.Envelope.SourceNumber == p.Account
+}
+
+func (p *Payload) ToString() string {
+	s, err := json.MarshalIndent(p, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	return string(s)
 }

@@ -20,7 +20,7 @@ func init() {
 	go func() {
 		for {
 			receive()
-			time.Sleep(time.Second)
+			time.Sleep(time.Second * 5)
 		}
 	}()
 }

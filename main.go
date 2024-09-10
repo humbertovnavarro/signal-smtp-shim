@@ -30,11 +30,21 @@ func main() {
 		if recipient, ok := RecipientMap[mail.To]; ok {
 			messageBody := strings.Join(mail.Content, "\n")
 			messageHeader := fmt.Sprintf("From: %s\nTo: %s\nSubject: %s", mail.From, mail.To, mail.Subject)
-			err := signalcli.Send(fmt.Sprintf("%s\n%s", messageHeader, messageBody), recipient)
-			if err != nil {
-				fmt.Println(err)
+			start := 0
+			messageBodyLen := len(messageBody)
+			for start < messageBodyLen {
+				minIndex := min(messageBodyLen, start+2000)
+				chunk := messageBody[start:minIndex]
+				err := signalcli.Send(fmt.Sprintf("%s\n%s", messageHeader, chunk), recipient)
+				if err != nil {
+					fmt.Println(err)
+				}
+				start = 2000
 			}
 		}
+	})
+	signalcli.OnReceive(func(payload *signalcli.Payload) {
+		fmt.Println(payload.ToString())
 	})
 	mail.ListenAndServe("0.0.0.0:25")
 	done := make(chan os.Signal, 1)
